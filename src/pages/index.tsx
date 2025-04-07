@@ -30,13 +30,23 @@ interface Customer {
   address?: string;
 }
 
+/**
+ * Home Page Component
+ * 
+ * This component displays a table of customers and provides a form dialog
+ * to add new customers to the system.
+ */
 const Home: NextPage = () => {
-  // State for customer list and loading state
+  // ---------- State Management ----------
+  
+  // Customers list and loading state
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   
-  // State for the add customer dialog
+  // Dialog visibility state
   const [open, setOpen] = useState<boolean>(false);
+  
+  // New customer form data state
   const [newCustomer, setNewCustomer] = useState({
     firstName: '',
     lastName: '',
@@ -45,14 +55,19 @@ const Home: NextPage = () => {
     phoneNumber: ''
   });
   
-  // State for form validation
+  // Form validation errors state
   const [errors, setErrors] = useState({
     firstName: false,
     lastName: false,
     email: false,
   });
 
-  // Fetch customers on component mount
+  // ---------- Data Fetching ----------
+  
+  /**
+   * Fetch customers from the API when the component mounts
+   * Uses the /api/customers endpoint (GET)
+   */
   useEffect(() => {
     const getCustomers = async () => {
       try {
@@ -62,18 +77,26 @@ const Home: NextPage = () => {
       } catch (error) {
         console.error('Error fetching customers:', error);
       } finally {
+        // Set loading to false regardless of success or failure
         setLoading(false);
       }
     };
 
     getCustomers();
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
-  // Handle dialog open/close
+  // ---------- Event Handlers ----------
+  
+  /**
+   * Opens the add customer dialog
+   */
   const handleClickOpen = () => {
     setOpen(true);
   };
 
+  /**
+   * Closes the add customer dialog and resets form state
+   */
   const handleClose = () => {
     setOpen(false);
     // Reset form fields and errors when dialog is closed
@@ -91,9 +114,14 @@ const Home: NextPage = () => {
     });
   };
 
-  // Handle input changes
+  /**
+   * Handles changes to form input fields
+   * Updates the newCustomer state and clears validation errors for the field
+   */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    // Update the new customer form data
     setNewCustomer({
       ...newCustomer,
       [name]: value
@@ -108,25 +136,38 @@ const Home: NextPage = () => {
     }
   };
 
-  // Validate form fields
+  /**
+   * Validates the form fields
+   * Checks that required fields are filled and email is valid
+   * @returns boolean - true if form is valid, false otherwise
+   */
   const validateForm = () => {
+    // Create new errors object based on validation rules
     const newErrors = {
-      firstName: !newCustomer.firstName,
-      lastName: !newCustomer.lastName,
-      email: !newCustomer.email || !/\S+@\S+\.\S+/.test(newCustomer.email),
+      firstName: !newCustomer.firstName, // Required field
+      lastName: !newCustomer.lastName, // Required field
+      email: !newCustomer.email || !/\S+@\S+\.\S+/.test(newCustomer.email), // Required and must be valid email format
     };
     
+    // Update errors state
     setErrors(newErrors);
+    
+    // Form is valid if no errors (none of the values in newErrors are true)
     return !Object.values(newErrors).some(Boolean);
   };
 
-  // Handle form submission
+  /**
+   * Handles form submission to add a new customer
+   * Validates form, makes API call, and updates UI on success
+   */
   const handleSubmit = async () => {
+    // Validate form before submission
     if (!validateForm()) {
       return;
     }
     
     try {
+      // Make POST request to API
       const response = await fetch('/api/customers', {
         method: 'POST',
         headers: {
@@ -136,14 +177,17 @@ const Home: NextPage = () => {
       });
       
       if (response.ok) {
-        // Create a new customer object with an ID and the form data
+        // API doesn't return the created customer, so we create one locally
+        // with a temporary ID for display purposes
         const newCustomerData = {
           id: Date.now().toString(), // Generate a temporary ID
           ...newCustomer
         };
         
-        // Add to the customers list
+        // Add new customer to the list
         setCustomers([...customers, newCustomerData]);
+        
+        // Close the dialog and reset form
         handleClose();
       } else {
         console.error('Failed to add customer');
@@ -153,8 +197,10 @@ const Home: NextPage = () => {
     }
   };
 
+  // ---------- Component Rendering ----------
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Header with title and Add Customer button */}
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h4" component="h1">
           Customers
@@ -163,7 +209,7 @@ const Home: NextPage = () => {
           variant="contained" 
           onClick={handleClickOpen}
           sx={{
-            backgroundColor: '#1F2937',
+            backgroundColor: '#1F2937', // Dark background for button matching design
             color: 'white',
             '&:hover': {
               backgroundColor: '#374151',
@@ -174,9 +220,11 @@ const Home: NextPage = () => {
         </Button>
       </Box>
 
+      {/* Conditional rendering based on loading state */}
       {loading ? (
         <Typography>Loading customers...</Typography>
       ) : (
+        // Customer table
         <TableContainer component={Paper} sx={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
           <Table sx={{ minWidth: 650 }} aria-label="customers table">
             <TableHead>
@@ -212,7 +260,9 @@ const Home: NextPage = () => {
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 'bold' }}>Add New Customer</DialogTitle>
         <DialogContent>
+          {/* Form Grid Layout */}
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            {/* First Name Field - Required */}
             <Grid item xs={12} sm={6}>
               <TextField
                 autoFocus
@@ -230,6 +280,7 @@ const Home: NextPage = () => {
                 required
               />
             </Grid>
+            {/* Last Name Field - Required */}
             <Grid item xs={12} sm={6}>
               <TextField
                 margin="dense"
@@ -246,6 +297,7 @@ const Home: NextPage = () => {
                 required
               />
             </Grid>
+            {/* Email Field - Required */}
             <Grid item xs={12}>
               <TextField
                 margin="dense"
@@ -262,6 +314,7 @@ const Home: NextPage = () => {
                 required
               />
             </Grid>
+            {/* Phone Number Field - Optional */}
             <Grid item xs={12}>
               <TextField
                 margin="dense"
@@ -275,6 +328,7 @@ const Home: NextPage = () => {
                 onChange={handleInputChange}
               />
             </Grid>
+            {/* Address Field - Optional */}
             <Grid item xs={12}>
               <TextField
                 margin="dense"
@@ -290,6 +344,7 @@ const Home: NextPage = () => {
             </Grid>
           </Grid>
         </DialogContent>
+        {/* Dialog Actions */}
         <DialogActions sx={{ p: 2, pt: 0 }}>
           <Button onClick={handleClose} sx={{ color: '#6B7280' }}>
             Cancel
